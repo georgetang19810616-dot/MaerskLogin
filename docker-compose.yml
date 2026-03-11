@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  maersk-automation:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: maersk-automation
+    ports:
+      # 前端访问端口
+      - "80:80"
+      # 后端API端口
+      - "3000:3000"
+      # noVNC访问端口
+      - "6080:6080"
+    environment:
+      # 显示设置
+      - DISPLAY=:99
+      - SCREEN_WIDTH=1920
+      - SCREEN_HEIGHT=1080
+      - SCREEN_DEPTH=24
+      # 后端配置
+      - NODE_ENV=production
+      - PORT=3000
+      # VNC配置
+      - VNC_PORT=5900
+      - NOVNC_PORT=6080
+    volumes:
+      # 持久化数据
+      - ./data:/app/data
+      # 日志目录
+      - ./logs:/app/logs
+    restart: unless-stopped
+    shm_size: '2gb'
+    networks:
+      - maersk-network
+
+  # 可选: 单独的VNC服务（如果需要更高性能）
+  vnc-server:
+    image: jlesage/novnc:latest
+    container_name: maersk-vnc
+    ports:
+      - "5901:5900"
+      - "6081:5800"
+    environment:
+      - VNC_PASSWORD=
+      - DISPLAY_WIDTH=1920
+      - DISPLAY_HEIGHT=1080
+      - WEB_LISTENING_PORT=5800
+    volumes:
+      - /dev/shm:/dev/shm
+    restart: unless-stopped
+    networks:
+      - maersk-network
+    profiles:
+      - vnc-only
+
+networks:
+  maersk-network:
+    driver: bridge
